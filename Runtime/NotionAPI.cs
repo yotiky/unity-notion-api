@@ -13,6 +13,7 @@ namespace BennyKok.NotionAPI
         private readonly static string rootUrl = $"https://api.notion.com/{version}";
         private readonly static string urlDB = rootUrl + "/databases";
         private readonly static string urlUsers = rootUrl + "/users";
+        private readonly static string apiVersion = "2021-05-13";
 
         public NotionAPI(string apiKey)
         {
@@ -21,10 +22,10 @@ namespace BennyKok.NotionAPI
 
         enum RequestType
         {
-            GET, POST
+            GET, POST, PATCH
         }
 
-        private UnityWebRequest WebRequestWithAuth(string url, RequestType requestType, WWWForm form = null)
+        private UnityWebRequest WebRequestWithAuth(string url, RequestType requestType, WWWForm form = null, string data = null)
         {
             UnityWebRequest request = null;
             switch (requestType)
@@ -35,9 +36,14 @@ namespace BennyKok.NotionAPI
                 case RequestType.POST:
                     request = UnityWebRequest.Post(url, form);
                     break;
+                case RequestType.PATCH:
+                    request = UnityWebRequest.Put(url, data);
+                    request.method = "PATCH";
+                    break;
             }
             request.SetRequestHeader("Authorization", $"Bearer {apiKey}");
             request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("Notion-Version", apiVersion);
             return request;
         }
 
@@ -60,6 +66,17 @@ namespace BennyKok.NotionAPI
                 yield return request.SendWebRequest();
                 var data = request.downloadHandler.text;
                 callback(data);
+            }
+        }
+
+        public IEnumerator PatchJSON(string url, string data, Action<string> callback)
+        {
+            if (debug) Debug.Log("PATCH Requesting: " + url + data);
+            using (var request = WebRequestWithAuth(url, RequestType.PATCH, null, data))
+            {
+                yield return request.SendWebRequest();
+                var result = request.downloadHandler.text;
+                callback(result);
             }
         }
 
@@ -114,6 +131,23 @@ namespace BennyKok.NotionAPI
             {
                 if (debug) Debug.Log(json);
                 callback(JsonUtility.FromJson<DatabaseUsers>(json));
+            });
+        }
+
+
+        public IEnumerator PatchPageProperties(string pageID, string data, Action<string> callback)
+        {
+            var url = $"{rootUrl}/pages/{pageID}";
+            yield return PatchJSON(url, data, callback);
+        }
+
+        public IEnumerator PatchPageProperties<T>(Page<T> page, Action<Page<T>> callback)
+        {
+            string data = JsonUtility.ToJson(page);
+            yield return PatchPageProperties(page.id, data, (json) =>
+            {
+                if (debug) Debug.Log(json);
+                callback?.Invoke(JsonUtility.FromJson<Page<T>>(json));
             });
         }
     }
