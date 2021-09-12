@@ -11,7 +11,6 @@ namespace BennyKok.NotionAPI
         private string apiKey;
         private readonly static string version = "v1";
         private readonly static string rootUrl = $"https://api.notion.com/{version}";
-        private readonly static string urlPage = rootUrl + "/pages";
         private readonly static string urlDB = rootUrl + "/databases";
         private readonly static string urlUsers = rootUrl + "/users";
         private readonly static string apiVersion = "2021-05-13";
@@ -64,22 +63,6 @@ namespace BennyKok.NotionAPI
             if (debug) Debug.Log("POST Requesting: " + url);
             using (var request = WebRequestWithAuth(url, RequestType.POST, form))
             {
-                yield return request.SendWebRequest();
-                var data = request.downloadHandler.text;
-                callback(data);
-            }
-        }
-
-        public IEnumerator PostJSON<T>(string url, Action<string> callback, T param)
-        {
-            if (debug) Debug.Log("POST Requesting: " + url);
-            using (var request = WebRequestWithAuth(url, RequestType.POST, null))
-            {
-                var json = JsonUtility.ToJson(param);
-                var body = Encoding.UTF8.GetBytes(json);
-                request.uploadHandler = new UploadHandlerRaw(body);
-                request.downloadHandler = new DownloadHandlerBuffer();
-
                 yield return request.SendWebRequest();
                 var data = request.downloadHandler.text;
                 callback(data);
@@ -187,11 +170,6 @@ namespace BennyKok.NotionAPI
                 if (debug) Debug.Log(json);
                 callback?.Invoke(JsonUtility.FromJson<Page<T>>(json));
             });
-        }
-
-        public IEnumerator CreatePage<T>(T param, Action<string> callback)
-        {
-            yield return PostJSON(urlPage, callback, param);
         }
     }
 }

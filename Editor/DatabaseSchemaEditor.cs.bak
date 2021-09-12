@@ -3,7 +3,6 @@ using System.Text;
 using UnityEngine;
 using Unity.EditorCoroutines.Editor;
 using BennyKok.NotionAPI.Editor.SimpleJSON;
-using Post = BennyKok.NotionAPI.Post;
 using System.Text.RegularExpressions;
 using System;
 using UnityEditor;
@@ -73,8 +72,6 @@ namespace BennyKok.NotionAPI.Editor
 
             sb.Append($"using {typeof(IDObject).Namespace};");
             sb.Append(Environment.NewLine);
-            sb.Append($"using Post = {typeof(IDObject).Namespace}.Post;");
-            sb.Append(Environment.NewLine);
             sb.Append("using System;");
             sb.Append(Environment.NewLine);
             sb.Append(Environment.NewLine);
@@ -124,46 +121,6 @@ namespace BennyKok.NotionAPI.Editor
             sb.Append($"public class {className}Page : Page<{className}>");
             sb.Append("{ }");
 #endif
-            // Post request parameter
-            sb.Append(Environment.NewLine);
-            sb.Append(Environment.NewLine);
-            sb.Append("[Serializable]");
-            sb.Append(Environment.NewLine);
-            sb.Append($"public class {className}DatabasePostRequest");
-            sb.Append(Environment.NewLine);
-            sb.Append("{");
-            sb.Append(Environment.NewLine);
-            sb.Append("    public Post.Parent parent;");
-            sb.Append(Environment.NewLine);
-            sb.Append($"    public {className}PostProperties properties;");
-            sb.Append(Environment.NewLine);
-            sb.Append("}");
-
-            sb.Append(Environment.NewLine);
-            sb.Append(Environment.NewLine);
-            sb.Append("[Serializable]");
-            sb.Append(Environment.NewLine);
-            sb.Append($"public class {className}PostProperties");
-            sb.Append(Environment.NewLine);
-            sb.Append("{");
-            sb.Append(Environment.NewLine);
-
-            for (int i = 0; i < target.fieldNames.Count; i++)
-            {
-                var notionType = GetPostPropertyTypeFromNotionType(target.fieldTypes[i]);
-                if (notionType == null) continue;
-
-                var field = target.fieldNames[i];
-                sb.Append("    ");
-                sb.Append($"public Post.{notionType.Name} ");
-                sb.Append(field);
-                sb.Append(";");
-                sb.Append(Environment.NewLine);
-            }
-
-            sb.Append("}");
-
-
             var path = Directory.GetParent(AssetDatabase.GetAssetPath(target));
             var scriptPath = Path.Combine(path.FullName, className + ".cs");
             using (var w = File.CreateText(scriptPath))
@@ -407,28 +364,6 @@ namespace BennyKok.NotionAPI.Editor
                 case "date": return typeof(DateProperty);
                 case "formula": return typeof(FormulaStringProperty);
                 case "people": return typeof(PeopleProperty);
-            }
-
-            return null;
-        }
-
-        public Type GetPostPropertyTypeFromNotionType(string notionType)
-        {
-            switch (notionType)
-            {
-                case "number": return typeof(Post.NumberProperty);
-                case "title": return typeof(Post.TitleProperty);
-                case "rich_text": return typeof(Post.TextProperty);
-                case "multi_select": return typeof(Post.MultiSelectProperty);
-                case "select": return typeof(Post.SelectProperty);
-                case "checkbox": return typeof(Post.CheckboxProperty);
-                case "date": return typeof(Post.DateProperty);
-                //case "formula": return typeof(FormulaStringProperty);
-                //case "people": return typeof(PeopleProperty);
-                case "people": return typeof(Post.PersonProperty);
-                case "url": return typeof(Post.UrlProperty);
-                case "email": return typeof(Post.EmailProperty);
-                case "phone_number": return typeof(Post.PhoneNumberProperty);
             }
 
             return null;
