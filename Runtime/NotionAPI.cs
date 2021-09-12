@@ -96,6 +96,17 @@ namespace BennyKok.NotionAPI
             });
         }
 
+#if !UNITY_2020_1_OR_NEWER && UNITY_EDITOR
+        public IEnumerator GetDatabaseSerializable<T>(string database_id, Action<T> callback)
+        {
+            yield return GetDatabaseJSON(database_id, (json) =>
+            {
+                if (debug) Debug.Log(json);
+                callback(JsonUtility.FromJson<T>(json));
+            });
+        }
+#endif
+
         /// <summary>
         /// Return the entire Notion Database schema in raw JSON string
         /// </summary>
@@ -108,6 +119,16 @@ namespace BennyKok.NotionAPI
             yield return GetJSON(url, callback);
         }
 
+#if !UNITY_2020_1_OR_NEWER
+        public IEnumerator QueryDatabase<T>(string database_id, Action<T> callback)
+        {
+            yield return QueryDatabaseJSON(database_id, (json) =>
+            {
+                if (debug) Debug.Log(json);
+                callback(JsonUtility.FromJson<T>(json));
+            });
+        }
+#else
         public IEnumerator QueryDatabase<T>(string database_id, Action<DatabaseQueryResponse<T>> callback)
         {
             yield return QueryDatabaseJSON(database_id, (json) =>
@@ -116,6 +137,7 @@ namespace BennyKok.NotionAPI
                 callback(JsonUtility.FromJson<DatabaseQueryResponse<T>>(json));
             });
         }
+#endif
 
         public IEnumerator QueryDatabaseJSON(string database_id, Action<string> callback)
         {
@@ -133,7 +155,6 @@ namespace BennyKok.NotionAPI
                 callback(JsonUtility.FromJson<DatabaseUsers>(json));
             });
         }
-
 
         public IEnumerator PatchPageProperties(string pageID, string data, Action<string> callback)
         {

@@ -23,10 +23,17 @@ namespace BennyKok.NotionAPI
                 Debug.Log(JsonUtility.ToJson(db));
             });
 
+#if !UNITY_2020_1_OR_NEWER
+            yield return api.QueryDatabase<CardDatabaseQueryResponse>(database_id, (db) =>
+            {
+                Debug.Log(JsonUtility.ToJson(db));
+            });
+#else
             yield return api.QueryDatabase<CardDatabaseProperties>(database_id, (db) =>
             {
                 Debug.Log(JsonUtility.ToJson(db));
             });
+#endif
         }
 
         [Serializable]
@@ -53,5 +60,14 @@ namespace BennyKok.NotionAPI
             public NumberProperty UseTime;
             public TextProperty Description;
         }
+
+        [Serializable]
+        public class CardDatabaseQueryResponse
+        {
+            public CardDatabasebPage[] results;
+        }
+
+        [Serializable]
+        public class CardDatabasebPage : Page<CardDatabaseProperties> { }
     }
 }

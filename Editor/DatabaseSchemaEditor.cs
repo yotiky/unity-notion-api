@@ -57,7 +57,7 @@ namespace BennyKok.NotionAPI.Editor
                 CreateCodeSchemaFile(m_target);
             }
 
-            if(GUILayout.Button("Create Serialized Database Asset"))
+            if (GUILayout.Button("Create Serialized Database Asset"))
             {
                 CreateSerializedDatabaseFile(m_target);
             }
@@ -101,6 +101,26 @@ namespace BennyKok.NotionAPI.Editor
 
             sb.Append("}");
 
+#if !UNITY_2020_1_OR_NEWER
+            sb.Append(Environment.NewLine);
+            sb.Append(Environment.NewLine);
+            sb.Append("[Serializable]");
+            sb.Append(Environment.NewLine);
+            sb.Append($"public class {className}DatabaseQueryResponse");
+            sb.Append(Environment.NewLine);
+            sb.Append("{");
+            sb.Append(Environment.NewLine);
+            sb.Append($"    public {className}Page[] results;");
+            sb.Append(Environment.NewLine);
+            sb.Append("}");
+
+            sb.Append(Environment.NewLine);
+            sb.Append(Environment.NewLine);
+            sb.Append("[Serializable]");
+            sb.Append(Environment.NewLine);
+            sb.Append($"public class {className}Page : Page<{className}>");
+            sb.Append("{ }");
+#endif
             var path = Directory.GetParent(AssetDatabase.GetAssetPath(target));
             var scriptPath = Path.Combine(path.FullName, className + ".cs");
             using (var w = File.CreateText(scriptPath))
@@ -218,14 +238,51 @@ namespace BennyKok.NotionAPI.Editor
 
             NewLine();
 
+#if !UNITY_2020_1_OR_NEWER
+            // database
+            NewLine();
+            sb.Append("[System.Serializable]");
+            NewLine();
+            sb.Append("public class DatabaseDefinition : Database<Definition> { }");
+
+            // pages
+            NewLine();
+            NewLine();
+            sb.Append("[System.Serializable]");
+            NewLine();
+            sb.Append($"public class {className}DatabaseQueryResponse");
+            NewLine();
+            sb.Append("{");
+            NewLine();
+            sb.Append($"    public {className}Page[] results;");
+            NewLine();
+            sb.Append("}");
+
+            NewLine();
+            NewLine();
+            sb.Append("[System.Serializable]");
+            NewLine();
+            sb.Append($"public class {className}Page : Page<Properties>");
+            sb.Append("{ }");
+#endif
+            NewLine();
+
             NewLine();
             sb.Append("public DatabaseSchema databaseSchema;");
 
+#if !UNITY_2020_1_OR_NEWER
+            NewLine();
+            sb.Append("public DatabaseDefinition database;");
+
+            NewLine();
+            sb.Append($"public {className}Page[] pages;");
+#else
             NewLine();
             sb.Append("public Database<Definition> database;");
 
             NewLine();
             sb.Append("public Page<Properties>[] pages;");
+#endif
 
             if (hasPeopleProperty)
             {
@@ -248,11 +305,17 @@ namespace BennyKok.NotionAPI.Editor
             indentLevel++;
             NewLine();
             sb.Append("var api = new NotionAPI(databaseSchema.apiKey);");
+#if !UNITY_2020_1_OR_NEWER
+            NewLine();
+            sb.Append("EditorCoroutineUtility.StartCoroutine(api.GetDatabaseSerializable<DatabaseDefinition>(databaseSchema.database_id, (db) => { database = db; }), this);");
+            NewLine();
+            sb.Append($"EditorCoroutineUtility.StartCoroutine(api.QueryDatabase<{className}DatabaseQueryResponse>(databaseSchema.database_id, (pages) => {{ this.pages = pages.results; }}), this);");
+#else
             NewLine();
             sb.Append("EditorCoroutineUtility.StartCoroutine(api.GetDatabase<Definition>(databaseSchema.database_id, (db) => { database = db; }), this);");
             NewLine();
             sb.Append("EditorCoroutineUtility.StartCoroutine(api.QueryDatabase<Properties>(databaseSchema.database_id, (pages) => { this.pages = pages.results; }), this);");
-
+#endif
             if (hasPeopleProperty)
             {
                 NewLine();
@@ -339,7 +402,7 @@ namespace BennyKok.NotionAPI.Editor
 
             ScriptableObject so = CreateInstance(className);
             so.name = className;
-            so.GetType().GetField("databaseSchema").SetValue(so,schema);
+            so.GetType().GetField("databaseSchema").SetValue(so, schema);
 
             AssetDatabase.CreateAsset(so, path + ".asset");
             AssetDatabase.SaveAssets();
