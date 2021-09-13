@@ -111,9 +111,23 @@ namespace BennyKok.NotionAPI.Post
     }
 
     [Serializable]
+    public class DateRangeProperty
+    {
+        //public string id;
+        //public string name;
+        //public string type;
+        public DateRange date;
+    }
+
+    [Serializable]
     public class Date
     {
         public string start;
+    }
+
+    [Serializable]
+    public class DateRange : Date
+    {
         public string end;
     }
 
